@@ -30,6 +30,10 @@ if (flags.has("help")) {
     "env fallback:",
     "  MONOPOLYFUN_HANDLE",
     "  MONOPOLYFUN_PASSWORD",
+    "  MONOPOLYFUN_LOGIN_SECRET",
+    "  MONOPOLYFUN_LOGIN_VALUE",
+    "  MONOPOLYFUN_HANDLE_FILE",
+    "  MONOPOLYFUN_LOGIN_FILE",
     "  MONOPOLYFUN_BASE_URL",
     "  MONOPOLYFUN_SECRET_SOURCE",
     "  MONOPOLYFUN_SECRET_PROVIDER",
@@ -50,7 +54,7 @@ try {
     required: true,
   });
   const password = readOption(flags, "password", {
-    envKeys: ["MONOPOLYFUN_PASSWORD"],
+    envKeys: ["MONOPOLYFUN_PASSWORD", "MONOPOLYFUN_LOGIN_SECRET", "MONOPOLYFUN_LOGIN_VALUE"],
     required: true,
   });
   const secretSource = readOption(flags, "secret-source", {

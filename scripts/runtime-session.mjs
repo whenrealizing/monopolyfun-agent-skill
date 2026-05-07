@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { readFile } from "node:fs/promises";
+
 export const DEFAULT_BASE_URL = "https://monopolyfun.app";
 const DEFAULT_SESSION_COOKIE_NAME = "MONOPOLYFUN_SESSION";
 const DEFAULT_CSRF_COOKIE_NAME = "MONOPOLYFUN_CSRF";
@@ -171,6 +173,79 @@ export async function registerOrLogin(input) {
   };
 }
 
+export async function loginOrRegister(input) {
+  const session = new ApiSession();
+  try {
+    const loginResponse = await apiJson(session, input.baseUrl, "POST", "/api/v1/auth/login", {
+      handle: input.handle,
+      password: input.password,
+    });
+    return {
+      mode: "logged_in",
+      session,
+      account: normalizeAccount(loginResponse.account, input.handle),
+    };
+  } catch (error) {
+    // 中文注释：现网运行时通常是重复登录同一账号，先走登录可以避开注册频控；只有确实不存在时才补注册。
+    if (!isInvalidLoginError(error)) {
+      throw error;
+    }
+  }
+  const registerResponse = await apiJson(session, input.baseUrl, "POST", "/api/v1/auth/register", {
+    handle: input.handle,
+    password: input.password,
+  });
+  return {
+    mode: "registered",
+    session,
+    account: normalizeAccount(registerResponse.account, input.handle),
+  };
+}
+
+export async function resolveRuntimeAuth(input = {}) {
+  const baseUrl = input.baseUrl ?? DEFAULT_BASE_URL;
+  const handle = await resolveCredentialValue(input.handle, input.handleFile);
+  const password = await resolveCredentialValue(input.password, input.loginFile);
+  const cookieHeader = input.cookieHeader?.trim?.() ?? "";
+  const csrfToken = input.csrfToken?.trim?.() ?? "";
+  if (handle && password) {
+    // 中文注释：运行时优先使用 handle/password 现登现取 session，避免长期缓存 cookie 失效后整个 skill 直接瘫痪。
+    const auth = await loginOrRegister({ baseUrl, handle, password });
+    return {
+      baseUrl,
+      authMode: auth.mode,
+      account: auth.account,
+      session: auth.session,
+    };
+  }
+  if (!cookieHeader) {
+    throw new Error("missing runtime credentials: provide handle/password or cookie");
+  }
+  const session = new ApiSession({ cookieHeader });
+  if (csrfToken) {
+    session.cookies.set(DEFAULT_CSRF_COOKIE_NAME, encodeURIComponent(csrfToken));
+  }
+  return {
+    baseUrl,
+    authMode: "cookie",
+    account: null,
+    session,
+  };
+}
+
+async function resolveCredentialValue(value, filePath) {
+  const direct = value?.trim?.() ?? "";
+  if (direct) {
+    return direct;
+  }
+  const path = filePath?.trim?.() ?? "";
+  if (!path) {
+    return "";
+  }
+  // 中文注释：OpenClaw 当前版本对 skill env 只支持字符串，敏感值通过文件路径传入时在这里延迟读取，避免把明文凭据留在 openclaw.json。
+  return (await readFile(path, "utf8")).trim();
+}
+
 export async function runTurnHealthcheck(input) {
   const home = await apiJson(input.session, input.baseUrl, "POST", "/api/v1/agent/turn", {
     intent: "view",
@@ -205,6 +280,21 @@ export function printJson(value) {
   console.log(JSON.stringify(value, null, 2));
 }
 
+export function printJsonError(error) {
+  if (error === null || error === undefined) {
+    return;
+  }
+  if (typeof error === "string") {
+    console.error(error);
+    return;
+  }
+  if (typeof error === "object") {
+    console.error(JSON.stringify(error, null, 2));
+    return;
+  }
+  console.error(String(error));
+}
+
 export function formatHelp(lines) {
   return `${lines.join("\n")}\n`;
 }
@@ -216,6 +306,12 @@ function isHandleTakenError(error) {
       normalizeErrorCode(error.body) === "auth.handle.taken"
       || normalizeErrorMessage(error.body).includes("handle already exists")
     );
+}
+
+function isInvalidLoginError(error) {
+  return error instanceof HttpError
+    && error.status === 401
+    && normalizeErrorMessage(error.body).includes("invalid handle or password");
 }
 
 function normalizeErrorCode(body) {

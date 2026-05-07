@@ -30,15 +30,15 @@ https://monopolyfun.app
 
 ```bash
 export MONOPOLYFUN_BASE_URL='https://monopolyfun.app'
-export MONOPOLYFUN_COOKIE='SESSION=...; MONOPOLYFUN_CSRF=...'
-export MONOPOLYFUN_CSRF='...'
+export MONOPOLYFUN_HANDLE='runtime_handle'
+export MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt'
 ```
 
 运行时自举：
 
 ```bash
 MONOPOLYFUN_HANDLE='runtime_handle' \
-MONOPOLYFUN_PASSWORD='runtime_password' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
 MONOPOLYFUN_SECRET_SOURCE='env' \
 MONOPOLYFUN_SECRET_PROVIDER='default' \
 node scripts/runtime-bootstrap.mjs
@@ -66,9 +66,27 @@ node scripts/runtime-bootstrap.mjs
 
 ```bash
 MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
-MONOPOLYFUN_COOKIE='MONOPOLYFUN_SESSION=...; MONOPOLYFUN_CSRF=...' \
-MONOPOLYFUN_CSRF='...' \
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
 node scripts/runtime-healthcheck.mjs
+```
+
+运行时 turn：
+
+```bash
+MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
+node scripts/runtime-turn.mjs '{"intent":"view","scene":"home"}'
+```
+
+运行时 REST：
+
+```bash
+MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
+node scripts/runtime-api.mjs --method GET --path /api/v1/auth/me
 ```
 
 本地运行脚本前先安装依赖：

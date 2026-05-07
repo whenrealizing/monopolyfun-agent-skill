@@ -2,47 +2,47 @@
 
 import {
   DEFAULT_BASE_URL,
+  apiJson,
   buildFailurePayload,
   formatHelp,
   parseArgs,
   printJson,
   readOption,
   resolveRuntimeAuth,
-  runTurnHealthcheck,
 } from "./runtime-session.mjs";
 
-const { flags } = parseArgs(process.argv.slice(2));
+const { args, flags } = parseArgs(process.argv.slice(2));
 
 if (flags.has("help")) {
   process.stdout.write(formatHelp([
-    "usage: node scripts/runtime-healthcheck.mjs [--base-url <url>] [--handle <handle>] [--password <password>] [--cookie <header>] [--csrf <token>]",
+    "usage: node scripts/runtime-turn.mjs '{\"intent\":\"view\",\"scene\":\"home\"}'",
+    "   or: node scripts/runtime-turn.mjs --input '{\"intent\":\"view\",\"scene\":\"home\"}'",
     "",
     "runtime auth priority:",
     "  1. MONOPOLYFUN_HANDLE + MONOPOLYFUN_PASSWORD",
     "  2. MONOPOLYFUN_COOKIE + optional MONOPOLYFUN_CSRF",
     "",
     "options:",
+    "  --input       turn payload json string",
     "  --base-url    api base url, default https://monopolyfun.app",
     "  --handle      monopolyfun account handle",
     "  --password    monopolyfun account password",
+    "  --handle-file file that stores monopolyfun account handle",
+    "  --login-file  file that stores monopolyfun login secret",
     "  --cookie      cookie header",
     "  --csrf        csrf token",
-    "",
-    "env fallback:",
-    "  MONOPOLYFUN_BASE_URL",
-    "  MONOPOLYFUN_HANDLE",
-    "  MONOPOLYFUN_PASSWORD",
-    "  MONOPOLYFUN_LOGIN_SECRET",
-    "  MONOPOLYFUN_LOGIN_VALUE",
-    "  MONOPOLYFUN_HANDLE_FILE",
-    "  MONOPOLYFUN_LOGIN_FILE",
-    "  MONOPOLYFUN_COOKIE",
-    "  MONOPOLYFUN_CSRF",
   ]));
   process.exit(0);
 }
 
 try {
+  const rawInput = readOption(flags, "input", {
+    defaultValue: args[0],
+  });
+  if (!rawInput) {
+    throw new Error("missing required turn input");
+  }
+  const input = JSON.parse(rawInput);
   const baseUrl = readOption(flags, "base-url", {
     envKeys: ["MONOPOLYFUN_BASE_URL"],
     defaultValue: DEFAULT_BASE_URL,
@@ -65,25 +65,21 @@ try {
   const csrfToken = readOption(flags, "csrf", {
     envKeys: ["MONOPOLYFUN_CSRF"],
   });
-  const runtime = await resolveRuntimeAuth({ baseUrl, handle, handleFile, password, loginFile, cookieHeader, csrfToken });
-  const healthcheck = await runTurnHealthcheck({ baseUrl, session: runtime.session });
-  printJson({
-    status: "ok",
-    authMode: runtime.authMode,
-    account: runtime.account,
-    runtime: {
-      cookiePresent: runtime.session.sessionCookiePresent(),
-      csrfPresent: runtime.session.csrfCookiePresent(),
-    },
-    checks: {
-      homeTurnOk: healthcheck.homeTurnOk,
-      workbenchTurnOk: healthcheck.workbenchTurnOk,
-    },
+  const runtime = await resolveRuntimeAuth({
+    baseUrl,
+    handle,
+    handleFile,
+    password,
+    loginFile,
+    cookieHeader,
+    csrfToken,
   });
+  const result = await apiJson(runtime.session, baseUrl, "POST", "/api/v1/agent/turn", input);
+  printJson(result);
 } catch (error) {
   printJson(buildFailurePayload(error, {
     status: "blocked",
-    phase: "runtime_healthcheck",
+    phase: "runtime_turn",
   }));
   process.exit(1);
 }

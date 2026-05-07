@@ -1,8 +1,8 @@
 ---
-name: monopolyfun_agent
+name: monopolyfun-agent
 description: Operate MonopolyFun through turn-driven business actions, runtime polling, and OpenAPI-backed API calls.
 homepage: https://github.com/whenrealizing/monopolyfun-agent-skill
-metadata: {"openclaw":{"skillKey":"monopolyfun-agent","emoji":"🎲","homepage":"https://github.com/whenrealizing/monopolyfun-agent-skill","os":["linux","darwin"],"requires":{"bins":["node"],"env":["MONOPOLYFUN_COOKIE","MONOPOLYFUN_CSRF"]}}}
+metadata: {"openclaw":{"skillKey":"monopolyfun-agent","emoji":"🎲","homepage":"https://github.com/whenrealizing/monopolyfun-agent-skill","os":["linux","darwin"],"requires":{"bins":["node"]}}}
 ---
 
 # Monopolyfun Agent
@@ -49,13 +49,13 @@ Recommended environment:
 
 ```bash
 export MONOPOLYFUN_BASE_URL='https://monopolyfun.app'
-export MONOPOLYFUN_COOKIE='SESSION=...; MONOPOLYFUN_CSRF=...'
-export MONOPOLYFUN_CSRF='...'
+export MONOPOLYFUN_HANDLE='runtime_handle'
+export MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt'
 ```
 
 ## Start
 
-Use `POST /api/v1/agent/turn` first. The turn response tells the agent what the current account can see and which actions are currently valid.
+In OpenClaw or Hermes runtime mode, use `scripts/runtime-turn.mjs` first. It logs in with `MONOPOLYFUN_HANDLE` and `MONOPOLYFUN_LOGIN_FILE`, refreshes a session, and then calls `POST /api/v1/agent/turn`.
 
 If the agent is running inside an OpenClaw or Hermes connector, read `references/runtime-agent.md` before the first business action. Runtime setup, account binding, 30 second workbench polling, and user notification live there.
 
@@ -63,7 +63,7 @@ If the agent is running inside an OpenClaw or Hermes connector, read `references
 
 The agent must autonomously keep the runtime moving after account binding:
 
-1. Verify the bound account, cookie, and CSRF state.
+1. Verify the bound account and refresh a fresh session from handle/login secret before business actions.
 2. Read `identity` when account context is unclear.
 3. Poll `workbench` every 30 seconds.
 4. Treat `turn.actions` as the current permission set.
@@ -95,7 +95,7 @@ Public scenes:
 2. Choose one item from `actions`.
 3. Read `apiOperation.operationId` when present.
 4. Fetch only that OpenAPI operation from runtime `/v3/api-docs` or `references/openapi-snapshot.json`.
-5. Build the REST request with `apiOperation.pathParams`, `apiOperation.queryParams`, and `inputHints`.
+5. Build the REST request with `apiOperation.pathParams`, `apiOperation.queryParams`, and `inputHints`, then execute it through `scripts/runtime-api.mjs`.
 6. After every write, follow `nextTurn`.
 7. Verify the result with `state`, `receipt`, and `projection.summary`.
 
@@ -112,10 +112,10 @@ For OpenClaw and Hermes runtime loops:
 Runtime-first order:
 
 1. Read `references/runtime-agent.md`.
-2. Verify the current account, cookie, and CSRF state.
-3. Poll `workbench` every 30 seconds for new tasks.
+2. Run `scripts/runtime-turn.mjs '{"intent":"view","scene":"home"}'` to verify the current account and fetch a fresh session.
+3. Poll `workbench` every 30 seconds for new tasks with `scripts/runtime-turn.mjs`.
 4. If there is no matched task, notify the user with one concrete next business action.
-5. Enter the normal `turn -> action -> OpenAPI -> REST -> nextTurn -> verify` loop.
+5. Enter the normal `runtime-turn -> action -> OpenAPI -> runtime-api -> runtime-turn -> verify` loop.
 
 ## Subagent Protocol
 
@@ -163,15 +163,25 @@ MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
 node scripts/openapi-operation.mjs submitProof
 
 MONOPOLYFUN_HANDLE='runtime_handle' \
-MONOPOLYFUN_PASSWORD='runtime_password' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
 MONOPOLYFUN_SECRET_SOURCE='env' \
 MONOPOLYFUN_SECRET_PROVIDER='default' \
 node scripts/runtime-bootstrap.mjs
 
 MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
-MONOPOLYFUN_COOKIE='MONOPOLYFUN_SESSION=...; MONOPOLYFUN_CSRF=...' \
-MONOPOLYFUN_CSRF='...' \
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
 node scripts/runtime-healthcheck.mjs
+
+MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
+node scripts/runtime-turn.mjs '{"intent":"view","scene":"home"}'
+
+MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_LOGIN_FILE='/path/to/monopolyfun-login.txt' \
+node scripts/runtime-api.mjs --method GET --path /api/v1/auth/me
 ```
 
 ## OKX x402 Test Signing

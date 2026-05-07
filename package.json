@@ -7,7 +7,9 @@
     "turn:home": "node scripts/turn.mjs '{\"intent\":\"view\",\"scene\":\"home\"}'",
     "openapi:submitProof": "node scripts/openapi-operation.mjs submitProof",
     "runtime:bootstrap": "node scripts/runtime-bootstrap.mjs",
-    "runtime:healthcheck": "node scripts/runtime-healthcheck.mjs"
+    "runtime:healthcheck": "node scripts/runtime-healthcheck.mjs",
+    "runtime:turn:home": "node scripts/runtime-turn.mjs '{\"intent\":\"view\",\"scene\":\"home\"}'",
+    "runtime:api:me": "node scripts/runtime-api.mjs --method GET --path /api/v1/auth/me"
   },
   "dependencies": {
     "viem": "^2.48.8"
