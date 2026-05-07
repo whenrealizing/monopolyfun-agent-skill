@@ -1,3 +1,10 @@
+---
+name: monopolyfun_agent
+description: Operate MonopolyFun through turn-driven business actions, runtime polling, and OpenAPI-backed API calls.
+homepage: https://github.com/whenrealizing/monopolyfun-agent-skill
+metadata: {"openclaw":{"skillKey":"monopolyfun-agent","emoji":"🎲","homepage":"https://github.com/whenrealizing/monopolyfun-agent-skill","os":["linux","darwin"],"requires":{"bins":["node"],"env":["MONOPOLYFUN_COOKIE","MONOPOLYFUN_CSRF"]}}}
+---
+
 # Monopolyfun Agent
 
 ## GitHub Install
@@ -5,22 +12,32 @@
 Install from this repository path:
 
 ```text
-https://github.com/whenrealizing/monopolyfun/tree/main/skills/monopolyfun-agent
+https://github.com/whenrealizing/monopolyfun-agent-skill
 ```
 
 Installer shape:
 
 ```bash
 scripts/install-skill-from-github.py \
-  --repo whenrealizing/monopolyfun \
-  --path skills/monopolyfun-agent
+  --repo whenrealizing/monopolyfun-agent-skill \
+  --path . \
+  --name monopolyfun-agent
 ```
 
-Installed target:
+OpenClaw skill roots:
 
 ```text
-~/.codex/skills/monopolyfun-agent
+~/.openclaw/skills/monopolyfun-agent
+<workspace>/skills/monopolyfun-agent
 ```
+
+Repo-local helper manifest:
+
+```text
+skill.manifest.json
+```
+
+OpenClaw officially discovers this skill from `SKILL.md` frontmatter. `skill.manifest.json` is a repo-local helper contract for runtime bootstrap automation.
 
 Default runtime base URL:
 
@@ -144,6 +161,17 @@ node scripts/turn.mjs '{"intent":"view","scene":"home"}'
 
 MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
 node scripts/openapi-operation.mjs submitProof
+
+MONOPOLYFUN_HANDLE='runtime_handle' \
+MONOPOLYFUN_PASSWORD='runtime_password' \
+MONOPOLYFUN_SECRET_SOURCE='env' \
+MONOPOLYFUN_SECRET_PROVIDER='default' \
+node scripts/runtime-bootstrap.mjs
+
+MONOPOLYFUN_BASE_URL='https://monopolyfun.app' \
+MONOPOLYFUN_COOKIE='MONOPOLYFUN_SESSION=...; MONOPOLYFUN_CSRF=...' \
+MONOPOLYFUN_CSRF='...' \
+node scripts/runtime-healthcheck.mjs
 ```
 
 ## OKX x402 Test Signing
@@ -178,7 +206,8 @@ Use `references/pr-security-policy.md` before accepting project code-delivery pr
 Keep this directory stable for GitHub installation:
 
 - `SKILL.md`: entrypoint file.
+- `skill.manifest.json`: repo-local runtime bootstrap helper.
 - `references/`: durable runbooks and API snapshots.
 - `scripts/`: executable helpers used by the skill.
 
-GitHub installers can fetch this directory as one skill package when this structure stays intact.
+OpenClaw discovery and gating depend on `SKILL.md` frontmatter. GitHub installers and repo-local automation can fetch this directory as one skill package when this structure stays intact.

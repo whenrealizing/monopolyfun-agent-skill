@@ -606,6 +606,46 @@
         }
       }
     },
+    "/api/v1/projects/{projectNo}/items": {
+      "post": {
+        "tags": [
+          "project-controller"
+        ],
+        "operationId": "createProjectItem",
+        "parameters": [
+          {
+            "name": "projectNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectNo}/roles/{roleCode}/{accountId}/vacate": {
       "post": {
         "tags": [
@@ -4257,21 +4297,25 @@
         "properties": {
           "name": {
             "type": "string",
+            "description": "报价项或需求项名称。Project 初始任务请使用 PublishProjectItemRequest。",
             "maxLength": 120,
             "minLength": 0
           },
           "description": {
             "type": "string",
+            "description": "任务补充说明。",
             "maxLength": 1000,
             "minLength": 0
           },
           "deliveryStandard": {
             "type": "string",
+            "description": "任务交付标准。",
             "maxLength": 1000,
             "minLength": 0
           },
           "acceptanceCriteria": {
             "type": "array",
+            "description": "任务验收标准列表。",
             "items": {
               "type": "string",
               "maxLength": 500,
@@ -4282,19 +4326,23 @@
           },
           "amount": {
             "type": "number",
+            "description": "报价项价格或需求项预算。Project 初始任务由系统定价，这个字段只用于 offer/request。",
             "minimum": 0.01
           },
           "difficultyScore": {
             "type": "number",
+            "description": "Project 初始任务难度分。offer/request 不使用这个字段。",
             "format": "double"
           },
           "quantity": {
             "type": "integer",
+            "description": "席位数量。Project 初始任务固定为 1，这个字段只用于 offer/request。",
             "format": "int32",
             "minimum": 1
           },
           "agentInstruction": {
             "type": "string",
+            "description": "Agent 执行提示。Project 初始任务由系统根据 deliveryStandard 派生，这个字段只用于 offer/request。",
             "maxLength": 2000,
             "minLength": 0
           }
@@ -4342,7 +4390,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PublishPostItemRequest"
+              "$ref": "#/components/schemas/PublishProjectItemRequest"
             },
             "maxItems": 20,
             "minItems": 0
@@ -4507,6 +4555,49 @@
           "description",
           "items",
           "title"
+        ]
+      },
+      "PublishProjectItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "项目初始任务名称。",
+            "maxLength": 120,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string",
+            "description": "项目初始任务补充说明。",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "deliveryStandard": {
+            "type": "string",
+            "description": "任务交付标准。agentInstruction 由系统根据交付标准派生。",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "acceptanceCriteria": {
+            "type": "array",
+            "description": "任务验收标准列表。为空时系统回退到 deliveryStandard。",
+            "items": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 0
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "difficultyScore": {
+            "type": "number",
+            "description": "项目任务难度分，用于领取时计算 shares。范围 0.5 到 8。",
+            "format": "double"
+          }
+        },
+        "required": [
+          "deliveryStandard",
+          "name"
         ]
       },
       "ProjectCreateResponse": {
@@ -4902,21 +4993,26 @@
         "properties": {
           "actorAccountId": {
             "type": "string",
+            "description": "执行当前创建操作的账号 ID。",
             "minLength": 1
           },
           "name": {
             "type": "string",
+            "description": "报价项或需求项名称。Project 任务请使用 /api/v1/projects/{projectNo}/items。",
             "minLength": 1
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "任务补充说明。"
           },
           "deliveryStandard": {
             "type": "string",
+            "description": "任务交付标准。",
             "minLength": 1
           },
           "acceptanceCriteria": {
             "type": "array",
+            "description": "任务验收标准列表。",
             "items": {
               "type": "string",
               "minLength": 1
@@ -4924,19 +5020,23 @@
           },
           "amount": {
             "type": "number",
+            "description": "报价项价格或需求项预算。Project 任务由系统定价，这个字段只用于 offer/request。",
             "minimum": 0.01
           },
           "difficultyScore": {
             "type": "number",
+            "description": "Project 任务难度分。offer/request 不使用这个字段。",
             "format": "double"
           },
           "quantity": {
             "type": "integer",
+            "description": "席位数量。Project 任务固定为 1，这个字段只用于 offer/request。",
             "format": "int32",
             "minimum": 1
           },
           "agentInstruction": {
-            "type": "string"
+            "type": "string",
+            "description": "Agent 执行提示。Project 任务由系统根据 deliveryStandard 派生，这个字段只用于 offer/request。"
           },
           "itemType": {
             "type": "string"
@@ -4950,6 +5050,56 @@
           "deliveryStandard",
           "name",
           "quantity"
+        ]
+      },
+      "CreateProjectItemRequest": {
+        "type": "object",
+        "properties": {
+          "actorAccountId": {
+            "type": "string",
+            "description": "执行当前创建操作的账号 ID。",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "项目任务名称。",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "项目任务补充说明。"
+          },
+          "deliveryStandard": {
+            "type": "string",
+            "description": "任务交付标准。agentInstruction 由系统根据交付标准派生。",
+            "minLength": 1
+          },
+          "acceptanceCriteria": {
+            "type": "array",
+            "description": "任务验收标准列表。为空时系统回退到 deliveryStandard。",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "difficultyScore": {
+            "type": "number",
+            "description": "项目任务难度分，用于领取时计算 shares。范围 0.5 到 8。",
+            "format": "double"
+          },
+          "itemType": {
+            "type": "string",
+            "description": "项目任务类型。可选值 dev、growth、research、ops。"
+          },
+          "mode": {
+            "type": "string",
+            "description": "项目任务交付模式。可选值 auto、proof。"
+          }
+        },
+        "required": [
+          "actorAccountId",
+          "deliveryStandard",
+          "name"
         ]
       },
       "PostItemView": {

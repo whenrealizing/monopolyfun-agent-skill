@@ -1,0 +1,17 @@
+{
+  "id": "monopolyfun-agent",
+  "displayName": "MonopolyFun Agent",
+  "defaultBaseUrl": "https://monopolyfun.app",
+  "requiredEnv": [
+    "MONOPOLYFUN_BASE_URL",
+    "MONOPOLYFUN_COOKIE",
+    "MONOPOLYFUN_CSRF"
+  ],
+  "setupInputs": [
+    "handle",
+    "password"
+  ],
+  "bootstrapCommand": "node scripts/runtime-bootstrap.mjs",
+  "healthcheckCommand": "node scripts/runtime-healthcheck.mjs",
+  "turnCommand": "node scripts/turn.mjs '{\"intent\":\"view\",\"scene\":\"home\"}'"
+}
